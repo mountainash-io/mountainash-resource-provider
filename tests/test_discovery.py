@@ -29,7 +29,7 @@ class Plan:
 
 class Provider:
     api_version = RESOURCE_PROVIDER_API_VERSION
-    formats = (
+    formats: tuple[ProviderFormatDescriptor, ...] = (
         ProviderFormatDescriptor(
             canonical_format="csv",
             aliases=frozenset(),
@@ -126,6 +126,25 @@ def test_validate_provider_rejects_descriptor_parser_key_mismatch() -> None:
             locator_prefixes=frozenset(),
             dialect_family="delimited",
             provider_format_key="unknown",
+        ),
+    )
+
+    with pytest.raises(ProviderCompatibilityError):
+        discovery.validate_provider(provider)
+
+
+def test_validate_provider_rejects_ambiguous_format_tokens() -> None:
+    provider = Provider()
+    provider.formats = (
+        Provider.formats[0],
+        ProviderFormatDescriptor(
+            canonical_format="tsv",
+            aliases=frozenset({"csv"}),
+            suffixes=frozenset({".tsv"}),
+            mediatypes=frozenset({"text/tab-separated-values"}),
+            locator_prefixes=frozenset(),
+            dialect_family="delimited",
+            provider_format_key="csv",
         ),
     )
 

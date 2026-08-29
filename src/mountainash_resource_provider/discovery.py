@@ -43,6 +43,7 @@ def validate_provider(
         isinstance(key, str) and _PROVIDER_KEY.fullmatch(key) for key in provider.parser_keys
     ):
         raise ProviderCompatibilityError("provider parser keys must be lowercase ASCII identifiers")
+    token_owners: dict[tuple[str, str], ProviderFormatDescriptor] = {}
     for descriptor in provider.formats:
         if not isinstance(descriptor, ProviderFormatDescriptor):
             raise ProviderCompatibilityError(
@@ -52,6 +53,7 @@ def validate_provider(
             raise ProviderCompatibilityError(
                 f"format {descriptor.canonical_format!r} names an unknown parser key"
             )
+        _validate_descriptor_tokens(descriptor, token_owners)
     return provider
 
 
@@ -102,6 +104,26 @@ def _load_entry_point(entry_point: EntryPoint, *, expected_key: str) -> Resource
             f"could not construct resource provider {expected_key!r}"
         ) from exc
     return validate_provider(provider, expected_key=expected_key)
+
+def _validate_descriptor_tokens(
+    descriptor: ProviderFormatDescriptor,
+    owners: dict[tuple[str, str], ProviderFormatDescriptor],
+) -> None:
+    token_groups = {
+        "format": {descriptor.canonical_format, *descriptor.aliases},
+        "suffix": descriptor.suffixes,
+        "mediatype": descriptor.mediatypes,
+        "locator prefix": descriptor.locator_prefixes,
+    }
+    for token_type, tokens in token_groups.items():
+        for token in tokens:
+            identity = token_type, token
+            if identity in owners:
+                raise ProviderCompatibilityError(
+                    f"duplicate {token_type} token {token!r} in provider descriptors"
+                )
+            owners[identity] = descriptor
+
 
 
 __all__ = [
