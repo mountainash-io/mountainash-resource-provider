@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from collections.abc import Collection, Mapping, Sequence
+from collections.abc import Callable, Collection, Mapping, Sequence
 from dataclasses import dataclass, field
 from typing import Any
 
@@ -53,17 +53,40 @@ class ProviderFormatDescriptor:
         dialect_family: str | None,
         provider_format_key: str,
     ) -> None:
-        object.__setattr__(self, "canonical_format", canonical_format)
-        object.__setattr__(self, "aliases", _freeze_strings(aliases, "aliases"))
-        object.__setattr__(self, "suffixes", _freeze_strings(suffixes, "suffixes"))
-        object.__setattr__(self, "mediatypes", _freeze_strings(mediatypes, "mediatypes"))
+        from .formats import (
+            normalize_format_name,
+            normalize_locator_prefix,
+            normalize_mediatype,
+            normalize_suffix,
+        )
+
+        object.__setattr__(self, "canonical_format", normalize_format_name(canonical_format))
+        object.__setattr__(
+            self,
+            "aliases",
+            _normalize_strings(aliases, "aliases", normalize_format_name),
+        )
+        object.__setattr__(
+            self,
+            "suffixes",
+            _normalize_strings(suffixes, "suffixes", normalize_suffix),
+        )
+        object.__setattr__(
+            self,
+            "mediatypes",
+            _normalize_strings(
+                mediatypes,
+                "mediatypes",
+                lambda value: normalize_mediatype(value, published=True),
+            ),
+        )
         object.__setattr__(
             self,
             "locator_prefixes",
-            _freeze_strings(locator_prefixes, "locator_prefixes"),
+            _normalize_strings(locator_prefixes, "locator_prefixes", normalize_locator_prefix),
         )
         object.__setattr__(self, "dialect_family", dialect_family)
-        object.__setattr__(self, "provider_format_key", provider_format_key)
+        object.__setattr__(self, "provider_format_key", normalize_format_name(provider_format_key))
 
 
 @dataclass(frozen=True)
@@ -155,6 +178,28 @@ class NativeReadRequest:
     def __init__(self, kind: str, arguments: Mapping[str, Any]) -> None:
         object.__setattr__(self, "kind", kind)
         object.__setattr__(self, "arguments", _freeze_map(arguments, "arguments"))
+
+
+def validate_dynamic_context_value(key: str, value: object) -> StructuredRowShape:
+    """Validate the closed API-v1 data-dependent context contract."""
+    from .errors import ProviderCompatibilityError
+
+    if key != "structured_row_shape":
+        raise ProviderCompatibilityError(f"unknown dynamic context key: {key}")
+    if not isinstance(value, (str, StructuredRowShape)):
+        raise ProviderCompatibilityError("structured_row_shape must be a string enum value")
+    try:
+        return StructuredRowShape(value)
+    except ValueError as exc:
+        raise ProviderCompatibilityError(f"unknown structured_row_shape: {value!r}") from exc
+
+
+def _normalize_strings(
+    values: Collection[str],
+    field_name: str,
+    normalizer: Callable[[str], str],
+) -> frozenset[str]:
+    return frozenset(normalizer(value) for value in _freeze_strings(values, field_name))
 
 
 def _freeze_strings(values: Collection[str], field_name: str) -> frozenset[str]:
