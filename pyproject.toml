@@ -1,0 +1,41 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "mountainash-resource-provider"
+version = "0.1.0"
+description = "Neutral resource-provider contracts for Mountainash"
+readme = "README.md"
+requires-python = ">=3.10"
+authors = [
+    { name = "Nathaniel Ramm", email = "nathaniel.ramm@discretedatascience.com" },
+]
+classifiers = [
+    "Development Status :: 3 - Alpha",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: Implementation :: CPython",
+]
+dependencies = [
+    "pyarrow>=16",
+    "StrEnum>=0.4.15,<1",
+]
+
+[tool.ruff]
+target-version = "py310"
+line-length = 100
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "UP"]
+
+[tool.mypy]
+python_version = "3.10"
+strict = true
+files = ["src", "tests"]
+
+[[tool.mypy.overrides]]
+module = ["pyarrow"]
+ignore_missing_imports = true
