@@ -1,0 +1,38 @@
+[metadata]
+allow-direct-references = true
+
+[build.targets.wheel]
+packages = ["src/mountainash_resource_provider"]
+
+[envs.test]
+installer = "uv"
+dependencies = [
+    "pytest>=8.3,<9",
+]
+
+[[envs.test.matrix]]
+python = ["3.10", "3.12"]
+
+[envs.test.scripts]
+test = "pytest {args}"
+test-quick = "pytest {args}"
+test-target-quick = "pytest {args}"
+
+[envs.ruff]
+installer = "uv"
+skip-install = true
+dependencies = ["ruff>=0.8,<1"]
+
+[envs.ruff.scripts]
+check = "ruff check src tests"
+fix = "ruff check --fix src tests"
+
+[envs.mypy]
+installer = "uv"
+dependencies = [
+    "mypy>=1.10,<2",
+    "pytest>=8.3,<9",
+]
+
+[envs.mypy.scripts]
+check = "mypy src tests"
