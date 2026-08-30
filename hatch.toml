@@ -11,7 +11,7 @@ dependencies = [
 ]
 
 [[envs.test.matrix]]
-python = ["3.10", "3.12"]
+python = ["3.12"]
 
 [envs.test.scripts]
 test = "pytest {args}"
@@ -29,6 +29,7 @@ fix = "ruff check --fix src tests"
 
 [envs.mypy]
 installer = "uv"
+python = "3.12"
 dependencies = [
     "mypy>=1.10,<2",
     "pytest>=8.3,<9",
